@@ -1,0 +1,22 @@
+(
+ :root-dir "/home/youngju.song/SNU/3/GA/proj1/generator"
+ :cache-dir "/home/youngju.song/SNU/3/GA/proj1/generator/.ensime_cache"
+ :name "generator"
+ :java-home "/home/youngju.song/scala_related/java_1.8/jdk1.8.0_65"
+ :java-flags ("-XX:MaxMetaspaceSize=256m" "-XX:ReservedCodeCacheSize=128m" "-Xms1024m" "-Xmx1024m" "-Xss2m")
+ :reference-source-roots ("/home/youngju.song/scala_related/java_1.8/jdk1.8.0_65/src.zip")
+ :scala-version "2.10.5"
+ :compiler-args ("-Xfuture" "-Xlint" "-Xplugin:/home/youngju.song/.ivy2/cache/org.brianmckenna/wartremover_2.10/jars/wartremover_2.10-0.14.jar" "-Yinline-warnings" "-Yno-adapted-args" "-Ywarn-dead-code" "-Ywarn-numeric-widen" "-deprecation" "-feature")
+ :formatting-prefs nil
+ :subprojects ((
+   :name "generator"
+   :source-roots ("/home/youngju.song/SNU/3/GA/proj1/generator/src/main/scala" "/home/youngju.song/SNU/3/GA/proj1/generator/src/test/scala")
+   :targets ("/home/youngju.song/SNU/3/GA/proj1/generator/target/scala-2.10/classes")
+   :test-targets ("/home/youngju.song/SNU/3/GA/proj1/generator/target/scala-2.10/test-classes")
+   :depends-on-modules nil
+   :compile-deps ("/home/youngju.song/.sbt/boot/scala-2.10.5/lib/scala-library.jar")
+   :runtime-deps nil
+   :test-deps nil
+   :doc-jars ("/home/youngju.song/.ivy2/cache/org.scala-lang/scala-library/docs/scala-library-2.10.5-javadoc.jar" "/home/youngju.song/SNU/3/GA/proj1/generator/target/scala-2.10/default_2.10-0.1-SNAPSHOT-javadoc.jar")
+   :reference-source-roots ("/home/youngju.song/.ivy2/cache/org.scala-lang/scala-library/srcs/scala-library-2.10.5-sources.jar")))
+)
