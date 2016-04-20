@@ -43,6 +43,7 @@ class Graph(val size: Int, val edges: Map[(Int, Int), Int]) {
     new Graph(size, e)
   }
   def valuation(a: BinaryChromosome.BC): Double = {
+    println("inside valuation")
     val t = for (
       //to: [a,b]
       //until: [a,b)
@@ -70,9 +71,16 @@ class GA[A](
   val mutation: A => A,
   val valuation: A => Double,
   val selection: List[Double] => List[Double]) {
-  lazy val progress: GA[A] = {
+  lazy val next: GA[A] = {
+    println("inside next")
     val next_pool: List[A] = pool.map(x => (x, valuation(x))).map(x => x._1)
+    println("inside next 2")
     new GA[A](next_pool, crossover, mutation, valuation, selection)
+  }
+  def progress(n: Int): GA[A] = {
+    println(n)
+    if(n > 0) this.next.progress(n-1)
+    else this
   }
 }
 
@@ -136,6 +144,7 @@ object main extends Application {
       g.valuation,
       SelectionFunction.basic
     )
+    println(ga.progress(15))
     println(s"${n} ${m}")
   }
   // val dir: better.files.File = pwd / cwd
