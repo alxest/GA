@@ -23,13 +23,23 @@ class Graph(val size: Int, val edges: Map[(Int, Int), Int]) {
     (s: String, x) => x._1._1 + " " + x._1._2 + " " + x._2 + "\n" + s)
   def random_node = Random.nextInt(size) + 1
   def spread_edges(m: Int, forbidden: Set[Range]) = {
-    def stream: Stream[Graph.Edge] =
-      (new Graph.Edge((random_node, random_node), Graph.random_weight) #:: stream)
-//      (new Tuple2(new Tuple2(random_node, random_node), Graph.random_weight) #:: stream)
+//     def stream: Stream[Graph.Edge] =
+//       (new Graph.Edge((random_node, random_node), Graph.random_weight) #:: stream)
+// //      (new Tuple2(new Tuple2(random_node, random_node), Graph.random_weight) #:: stream)
 
-    val bb: Set[Graph.Edge] = stream.distinct.take(m).filter(x =>
-      forbidden.forall(! _.contains(x))).toSet.take(m)
-    val e = edges ++ bb
+//     // from Stream.scala
+//     // This should use max memory proportional to N, whereas
+//     // recursively calling distinct on the tail is N^2.
+//     val bb: Set[Graph.Edge] = stream.distinct.filter(x =>
+//       forbidden.forall(! _.contains(x))).take(m).toSet
+//     //distinct does not work well now, because
+//     //it compares (from,to,wegiht), not (from,to)
+//     val e = edges ++ bb
+
+    var e = edges
+    while(e.size < m) {
+      e += new Graph.Edge((random_node, random_node), Graph.random_weight)
+    }
     new Graph(size, e)
   }
   def valuation(a: BinaryChromosome.BC): Double = {
@@ -60,7 +70,7 @@ class GA[A](
   val mutation: A => A,
   val valuation: A => Double,
   val selection: List[Double] => List[Double]) {
-  val progress: GA[A] = {
+  lazy val progress: GA[A] = {
     val next_pool: List[A] = pool.map(x => (x, valuation(x))).map(x => x._1)
     new GA[A](next_pool, crossover, mutation, valuation, selection)
   }
@@ -100,7 +110,7 @@ object SelectionFunction {
   def basic(a: List[Double]): List[Double] = ???
 }
 
-object GARunner extends Application {
+object main extends Application {
   val dir = File(System.getProperty("user.dir"))
   val matches: Iterator[File] = dir.glob("**/*.{in}")
   matches.foreach { f =>
@@ -116,7 +126,7 @@ object GARunner extends Application {
         new Graph.Edge((x(0).toInt, x(1).toInt), x(2).toInt)
       }
     ).toMap
-    assert(edge_data.size == m)
+    assert(edge_data.size == m, s"${m} is not ${edge_data.size}")
     val g = new Graph(n, edge_data)
     val LIC = new BinaryChromosome(n)
     val ga = new GA[List[Int]](
