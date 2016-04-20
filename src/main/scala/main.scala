@@ -5,42 +5,50 @@ import scala.annotation.tailrec
 import scala.util.Random
 // http://stackoverflow.com/questions/15639078/scala-class-constructor-parameters
 // If you prefix parameters with val, var they will be visible from outside of class, otherwise, they will be private, as you can see in code above.
-class Edge(val from: Int, val to: Int, val weight: Int) {
-  override def toString =
-    from.toString + " " + to.toString + " " + weight.toString
-  override def equals(o: Any) = o match {
-    case (that: Edge) =>
-      this.from == that.from && this.to == that.to
-    case _ => false
-  }
-  override def hashCode = (from + to).hashCode
-}
 
-class Graph(val size: Int, val edges: Set[Edge]) {
-  def this(size: Int) = this(size, Set())
+// class Edge(val from: Int, val to: Int, val weight: Int) {
+//   override def toString =
+//     from.toString + " " + to.toString + " " + weight.toString
+//   override def equals(o: Any) = o match {
+//     case (that: Edge) =>
+//       this.from == that.from && this.to == that.to
+//     case _ => false
+//   }
+//   override def hashCode = (from + to).hashCode
+// }
+
+class Graph(val size: Int, val edges: Map[(Int, Int), Int]) {
+  def this(size: Int) = this(size, Map())
   override def toString = edges.foldLeft("")(
-    (s: String, x: Edge) => x.toString + "\n" + s)
+    (s: String, x) => x._1._1 + " " + x._1._2 + " " + x._2 + "\n" + s)
   def random_node = Random.nextInt(size) + 1
   def spread_edges(m: Int, forbidden: Set[Range]) = {
-    def stream: Stream[Edge] = 
-      (new Edge(random_node, random_node, Graph.random_weight) #:: stream)
+    def stream: Stream[Graph.Edge] =
+      (new Graph.Edge((random_node, random_node), Graph.random_weight) #:: stream)
+//      (new Tuple2(new Tuple2(random_node, random_node), Graph.random_weight) #:: stream)
 
-    val bb: Set[Edge] = stream.distinct.take(m).filter(x =>
+    val bb: Set[Graph.Edge] = stream.distinct.take(m).filter(x =>
       forbidden.forall(! _.contains(x))).toSet.take(m)
     val e = edges ++ bb
     new Graph(size, e)
   }
   def valuation(a: BinaryChromosome.BC): Double = {
     val t = for (
-      i <- (1 to size) ;
-      j <- (1 to size) ;
-      if(a(i) != a(j))
-    ) yield (i,j)
-    ???
+      //to: [a,b]
+      //until: [a,b)
+      from <- (0 until size) ;
+      to <- ((from + 1) until size) ;
+      if(a(from) != a(to)) ;
+      weight = edges.getOrElse((from+1,to+1), 0)
+    ) yield weight
+    //BC: [0,n)
+    //node: [1,n]
+    t.foldLeft(0.0)(_ + _)
   }
 }
 
 object Graph {
+  type Edge = ((Int, Int), Int)
   def random_weight = Random.nextInt(2000) - 1000
   // import scala.language.implicitConversions
   // implicit def GraphToString(g: Graph): String = ""
@@ -68,7 +76,7 @@ class BinaryChromosome(length: Int) { // extends Chromosome {
     // val t: IndexedSeq[String] = (0 to n).map(_ =>
     //   (scala.util.Random.nextInt % 2).toString)
     // t.foldLeft("")(_ + _)
-    (0 to length).map(_ => Random.nextInt(maxval)).toList
+    (1 to length).map(_ => Random.nextInt(maxval)).toList
   }
   def crossover(a: BinaryChromosome.BC, b: BinaryChromosome.BC): BinaryChromosome.BC = {
     assert(a.size == b.size)
@@ -105,9 +113,9 @@ object GARunner extends Application {
     val edge_data = lines.drop(1).filterNot(_.trim == "").map(_.split(" ")).map(
       x => {
         assert(x.length == 3, s"${x} length not 3, but ${x.length}")
-        new Edge(x(0).toInt, x(1).toInt, x(2).toInt)
+        new Graph.Edge((x(0).toInt, x(1).toInt), x(2).toInt)
       }
-    ).toSet
+    ).toMap
     assert(edge_data.size == m)
     val g = new Graph(n, edge_data)
     val LIC = new BinaryChromosome(n)
