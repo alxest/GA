@@ -8,13 +8,9 @@ import scala.util.Random
 class Edge(val from: Int, val to: Int, val weight: Int) {
   override def toString =
     from.toString + " " + to.toString + " " + weight.toString
-  // where did this "weight" come from??
   override def equals(o: Any) = o match {
     case (that: Edge) =>
       this.from == that.from && this.to == that.to
-      // val r = this.from == that.from && this.to == that.to
-      // println(r)
-      // r
     case _ => false
   }
   override def hashCode = (from + to).hashCode
@@ -26,49 +22,22 @@ class Graph(val size: Int, val edges: Set[Edge]) {
     (s: String, x: Edge) => x.toString + "\n" + s)
   def random_node = Random.nextInt(size) + 1
   def spread_edges(m: Int, forbidden: Set[Range]) = {
-    // var counter = 0
-    // @tailrec
-    def stream: Stream[Edge] = {
-      // println(counter)
-      // counter += 1
+    def stream: Stream[Edge] = 
       (new Edge(random_node, random_node, Graph.random_weight) #:: stream)
-      // (new Edge(random_node, random_node, Graph.random_weight) #:: stream).distinct
-    }
-    // println("-----------------------------------------------------------")
-    // println(stream.take(10000))
-    // println("-----------------------------------------------------------")
-    // println(stream.take(100).toList)
-    // println("-----------------------------------------------------------")
-    // println(stream.take(1000).toList)
-    // println("-----------------------------------------------------------")
-    // println(stream.take(1000).toList)
-    // println("-----------------------------------------------------------")
 
     val bb: Set[Edge] = stream.distinct.take(m).filter(x =>
-    forbidden.forall(! _.contains(x))).toSet.take(m)
-    // println(bb)
+      forbidden.forall(! _.contains(x))).toSet.take(m)
     val e = edges ++ bb
-    // println(e)
-    //     override def distinct: Stream[A] = {
-  //   // This should use max memory proportional to N, whereas
-  //   // recursively calling distinct on the tail is N^2.
-  //   def loop(seen: Set[A], rest: Stream[A]): Stream[A] = {
-  //     if (rest.isEmpty) rest
-  //     else if (seen(rest.head)) loop(seen, rest.tail)
-  //     else cons(rest.head, loop(seen + rest.head, rest.tail))
-  //   }
-  //   loop(Set(), this)
-  // }
-
-    
-      // (1 to m).map(_ =>
-      //   new Edge(random_node, random_node, Graph.random_weight))
     new Graph(size, e)
   }
-
-  // implicit override def toString = ""
-  // override def abc = ""
-  // method abc overrides nothing
+  def valuation(a: BinaryChromosome.BC): Double = {
+    val t = for (
+      i <- (1 to size) ;
+      j <- (1 to size) ;
+      if(a(i) != a(j))
+    ) yield (i,j)
+    ???
+  }
 }
 
 object Graph {
@@ -81,8 +50,8 @@ class GA[A](
   val pool: List[A],
   val crossover: (A, A) => A,
   val mutation: A => A,
-  val valuation: A => Float,
-  val selection: List[Float] => List[Float]) {
+  val valuation: A => Double,
+  val selection: List[Double] => List[Double]) {
   val progress: GA[A] = {
     val next_pool: List[A] = pool.map(x => (x, valuation(x))).map(x => x._1)
     new GA[A](next_pool, crossover, mutation, valuation, selection)
@@ -93,30 +62,34 @@ object GA {
   val pool_size = 250
 }
 
-class ListIntChromosome(length: Int, maxval: Int) { // extends Chromosome {
-  type A = List[Int]
-  def random_binary: A = {
+class BinaryChromosome(length: Int) { // extends Chromosome {
+  val maxval = 2
+  def random_binary: BinaryChromosome.BC = {
     // val t: IndexedSeq[String] = (0 to n).map(_ =>
     //   (scala.util.Random.nextInt % 2).toString)
     // t.foldLeft("")(_ + _)
     (0 to length).map(_ => Random.nextInt(maxval)).toList
   }
-  def crossover(a: A, b: A): A = {
+  def crossover(a: BinaryChromosome.BC, b: BinaryChromosome.BC): BinaryChromosome.BC = {
     assert(a.size == b.size)
     assert(b.size == length)
     val l = a.size
     val k = Random.nextInt(l)
     a.slice(0, k) ++ b.slice(k, l)
   }
-  def mutation(a: A): A = {
+  def mutation(a: BinaryChromosome.BC): BinaryChromosome.BC = {
     assert(a.size == length)
     val k = Random.nextInt(a.size)
     a.updated(k, Random.nextInt(maxval))
   }
 }
 
+object BinaryChromosome {
+  type BC = List[Int]
+}
+
 object SelectionFunction {
-  def basic(a: List[Float]): List[Float] = ???
+  def basic(a: List[Double]): List[Double] = ???
 }
 
 object GARunner extends Application {
@@ -137,12 +110,12 @@ object GARunner extends Application {
     ).toSet
     assert(edge_data.size == m)
     val g = new Graph(n, edge_data)
-    val LIC = new ListIntChromosome(n, 2)
+    val LIC = new BinaryChromosome(n)
     val ga = new GA[List[Int]](
       List.fill(GA.pool_size)(LIC.random_binary),
       LIC.crossover,
       LIC.mutation,
-      ???,
+      g.valuation,
       SelectionFunction.basic
     )
     println(s"${n} ${m}")
