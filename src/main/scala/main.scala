@@ -48,9 +48,32 @@ class GA[A](
   val mutation: A => A,
   val valuation: A => Double,
   val find_parent: List[Double] => (Int, Int),
-  val selection: (List[Double], Int) => Set[Int]) {
+  val selection: (List[Double], Int) => Set[Int],
+  val value_cache: Map[A, (Double, Int)]) {
 
-  lazy val current_value = pool.map(x => valuation(x))
+  lazy val new_value_cache: Map[A, (Double, Int)] = {
+    var vc: Map[A, (Double, Int)] = value_cache
+    pool.foreach{x =>
+      if(! vc.keySet.contains(x))
+        vc = vc.updated(x, (valuation(x), 3))
+      else {
+        val (value, old_age) = vc(x)
+        vc = vc.updated(x, (value, old_age+10))
+      }
+      assert(vc.keySet.contains(x))
+    }
+
+    vc = vc.map{x =>
+      val (key, (value, age)) = x
+      (key, (value, age-1))
+    }
+    vc = vc.filter(_._2._2 != 0)
+    println("vc size : " + vc.size)
+    vc
+  }
+
+  lazy val current_value = pool.map(x =>
+      new_value_cache(x)._1)
 
   def get_sibling = {
     val (mama, papa): (Int, Int) = find_parent(current_value)
@@ -68,8 +91,8 @@ class GA[A](
     val next_pool =
       pool.zipWithIndex.filterNot(x => replaced.contains(x._2)).map(_._1) ++ siblings
 
-    println(s"Current sum of valuation : ${current_value.foldLeft(0.0)(_ + _)} ${get_best._2}")
-    new GA[A](next_pool, crossover, mutation, valuation, find_parent, selection)
+    println(s"Current avg of valuation : ${(current_value.foldLeft(0.0)(_ + _)/GA.pool_size).toInt} ${get_best._2}")
+    new GA[A](next_pool, crossover, mutation, valuation, find_parent, selection, new_value_cache)
   }
 
   def progress(n: Int): GA[A] = {
@@ -156,8 +179,8 @@ object main extends Application {
   val dir = File(System.getProperty("user.dir"))
   // val matches: Iterator[File] = dir.glob("**/100_5000_pos_2coclique.{in}")
   // val matches: Iterator[File] = dir.glob("**/200_20000_pos_2coclique.{in}")
-  val matches: Iterator[File] = dir.glob("**/1000_10000_pos_2coclique.{in}")
-  // val matches: Iterator[File] = dir.glob("**/given_500.in")
+  // val matches: Iterator[File] = dir.glob("**/1000_10000_pos_2coclique.{in}")
+  val matches: Iterator[File] = dir.glob("**/given_500.in")
   // val matches: Iterator[File] = dir.glob("**/*_pos_2coclique.{in}")
   matches.foreach { f =>
     println(f)
@@ -182,9 +205,10 @@ object main extends Application {
       BC.mutation,
       g.valuation,
       BasicSelection.find_parent,
-      BasicSelection.selection
+      BasicSelection.selection,
+      Map()
     )
-    val ga_ = ga.progress(1500)
+    val ga_ = ga.progress(2700)
     println(ga_.get_best)
     // println(ga_.pool.map(BC.distance(bc, _)).sorted)
     println(s"${n} ${m}")
