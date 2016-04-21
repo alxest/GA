@@ -90,7 +90,7 @@ class GA[A](
 }
 
 object GA {
-  val pool_size = 50
+  val pool_size = 35
   val k_size = (pool_size / 1.1).toInt
 }
 
@@ -106,6 +106,7 @@ class BinaryChromosome(length: Int) { // extends Chromosome {
     a.slice(0, k) ++ b.slice(k, l)
   }
   def mutation(a: BinaryChromosome.BC): BinaryChromosome.BC = {
+    if(Random.nextInt(5) == 0) return a
     // println("mutation start")
     assert(a.size == length)
     def go(n: Int): BinaryChromosome.BC =
@@ -115,7 +116,7 @@ class BinaryChromosome(length: Int) { // extends Chromosome {
         g.updated(k, 1-g(k))
       }
       else a
-    val res = go(5)
+    val res = go(1)
     // println("mutation end")
     res
   }
@@ -133,7 +134,7 @@ object BasicSelection{
   def find_parent(a: List[Double]): (Int, Int) = {
     // println("find_parent start")
     val x = a.zipWithIndex.sortWith(_._1 > _._1)
-    val res = (x(0 + Random.nextInt(3))._2, x(1 + Random.nextInt(3))._2)
+    val res = (x(0 + Random.nextInt(2))._2, x(0 + Random.nextInt(2))._2)
     // println("find_parent end")
     res
   }
@@ -181,7 +182,7 @@ object main extends Application {
       BasicSelection.find_parent,
       BasicSelection.selection
     )
-    val ga_ = ga.progress(20)
+    val ga_ = ga.progress(50)
     println(ga_.get_best)
     println(ga_.pool.map(BC.distance(bc, _)).sorted)
     println(s"${n} ${m}")
