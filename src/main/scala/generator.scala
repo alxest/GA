@@ -6,10 +6,17 @@ import scala.util.Random
 
 object DataGenerator extends Application {
   val n_cand : Set[Int] = Set(100, 500, 1000) //, 2500)
-  val m_cand : Set[Int] = Set(0, 10, 100, 1000, 5000, 10000) //, 25000)
-  for(n <- n_cand ;
-    m <- m_cand
-  ) {
+  val m_cand : Set[Int] = Set(0, 10, 100, 1000, 2500, 5000, 10000) //, 25000)
+  val w_cand : Set[(String, (Int, Int))] = Set(
+    ("both", (-100, 100)),
+    ("pos", (100, 200)),
+    ("neg", (-200, -100)))
+
+  for{
+    n <- n_cand ;
+    m <- m_cand ;
+    w <- w_cand
+  } {
     if(n*n >= m) {
       println(s"${n} ${m}")
       def write_graph(file_name: String, g: Graph) = {
@@ -20,7 +27,18 @@ object DataGenerator extends Application {
         f << g.toString
       }
 
-      write_graph(s"${n}_${m}_normal.in", new Graph(n).spread_edges(m, Set()))
+      write_graph(s"${n}_${m}_${w._1}_normal.in",
+        new Graph(n).spread_edges(m, w._2, Set()))
+
+      val x: Int = (n/2).toInt
+      val y: Int = x*2
+      // println(n + " " + x + " " + m)
+      // println(n*n - x*x - x*x >= m)
+      if(n*n - x*x - x*x >= m) {
+        write_graph(s"${n}_${m}_${w._1}_2coclique.in", {
+          new Graph(n).spread_edges(m, w._2, Set((0 until x), (x until y)))
+        })
+      }
       // write_graph(s"${n}_${m}_clique.in", new Graph(n).spread_edges(m, Set()))
       // write_graph(s"${n}_${m}_2clique.in", new Graph(n).spread_edges(m, Set()))
       // write_graph(s"${n}_${m}_coclique.in", new Graph(n).spread_edges(m, Set()))

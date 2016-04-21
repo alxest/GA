@@ -6,39 +6,25 @@ import scala.util.Random
 // http://stackoverflow.com/questions/15639078/scala-class-constructor-parameters
 // If you prefix parameters with val, var they will be visible from outside of class, otherwise, they will be private, as you can see in code above.
 
-// class Edge(val from: Int, val to: Int, val weight: Int) {
-//   override def toString =
-//     from.toString + " " + to.toString + " " + weight.toString
-//   override def equals(o: Any) = o match {
-//     case (that: Edge) =>
-//       this.from == that.from && this.to == that.to
-//     case _ => false
-//   }
-//   override def hashCode = (from + to).hashCode
-// }
-
 class Graph(val size: Int, val edges: Map[(Int, Int), Int]) {
+
   def this(size: Int) = this(size, Map())
+
   override def toString = edges.foldLeft("")(
     (s: String, x) => x._1._1 + " " + x._1._2 + " " + x._2 + "\n" + s)
-  def random_node = Random.nextInt(size) + 1
-  def spread_edges(m: Int, forbidden: Set[Range]) = {
-//     def stream: Stream[Graph.Edge] =
-//       (new Graph.Edge((random_node, random_node), Graph.random_weight) #:: stream)
-// //      (new Tuple2(new Tuple2(random_node, random_node), Graph.random_weight) #:: stream)
 
-//     // from Stream.scala
-//     // This should use max memory proportional to N, whereas
-//     // recursively calling distinct on the tail is N^2.
-//     val bb: Set[Graph.Edge] = stream.distinct.filter(x =>
-//       forbidden.forall(! _.contains(x))).take(m).toSet
-//     //distinct does not work well now, because
-//     //it compares (from,to,wegiht), not (from,to)
-//     val e = edges ++ bb
+  def random_node = Random.nextInt(size) + 1
+
+  def spread_edges(m: Int, weight: (Int, Int), forbidden: Set[Range]) = {
+    val (from, to) = weight
+    def random_weight = Random.nextInt(to-from) + from
 
     var e = edges
     while(e.size < m) {
-      e += new Graph.Edge((random_node, random_node), Graph.random_weight)
+      val a = random_node
+      val b = random_node
+      if(forbidden.forall(x => ! (x.contains(a) && x.contains(b))))
+        e += new Graph.Edge((a, b), random_weight)
     }
     new Graph(size, e)
   }
@@ -48,26 +34,11 @@ class Graph(val size: Int, val edges: Map[(Int, Int), Int]) {
       if(a(from-1) != a(to-1))
     } yield weight
     t.foldLeft(0.0)(_ + _)
-    // println("inside valuation")
-    // val t = for (
-    //   //to: [a,b]
-    //   //until: [a,b)
-    //   from <- (0 until size) ;
-    //   to <- ((from + 1) until size) ;
-    //   if(a(from) != a(to)) ;
-    //   weight = edges.getOrElse((from+1,to+1), 0)
-    // ) yield weight
-    // //BC: [0,n)
-    // //node: [1,n]
-    // t.foldLeft(0.0)(_ + _)
   }
 }
 
 object Graph {
   type Edge = ((Int, Int), Int)
-  def random_weight = Random.nextInt(200) - 100
-  // import scala.language.implicitConversions
-  // implicit def GraphToString(g: Graph): String = ""
 }
 
 class GA[A](
@@ -86,11 +57,6 @@ class GA[A](
   }
 
   lazy val next: GA[A] = {
-    // val c: List[(A, Boolean)] = pool.zip(b)
-    // val next_pool: List[A] = c.filter(_._2).map(_._1)
-    // val c: List[(Double, Boolean, Int)] = a.zip(b).zipWithIndex.
-    //   map(x => (x._1._1, x._1._2, x._2))
-
     val siblings = for {
       i <- (1 to GA.k_size)
     } yield get_sibling
@@ -100,7 +66,7 @@ class GA[A](
     val next_pool =
       pool.zipWithIndex.filterNot(x => replaced.contains(x._2)).map(_._1) ++ siblings
 
-    println(s"Current sum of valuation : ${current_value.foldLeft(0.0)(_ + _)}")
+    println(s"Current sum of valuation : ${current_value.foldLeft(0.0)(_ + _)} ${get_best._2}")
     new GA[A](next_pool, crossover, mutation, valuation, find_parent, selection)
   }
 
@@ -117,18 +83,14 @@ class GA[A](
 }
 
 object GA {
-  val pool_size = 250
-  val k_size = pool_size / 8
+  val pool_size = 200
+  val k_size = pool_size / 2
 }
 
 class BinaryChromosome(length: Int) { // extends Chromosome {
   val maxval = 2
-  def random_binary: BinaryChromosome.BC = {
-    // val t: IndexedSeq[String] = (0 to n).map(_ =>
-    //   (scala.util.Random.nextInt % 2).toString)
-    // t.foldLeft("")(_ + _)
+  def random_binary: BinaryChromosome.BC =
     (1 to length).map(_ => Random.nextInt(maxval)).toList
-  }
   def crossover(a: BinaryChromosome.BC, b: BinaryChromosome.BC): BinaryChromosome.BC = {
     assert(a.size == b.size)
     assert(b.size == length)
@@ -138,8 +100,13 @@ class BinaryChromosome(length: Int) { // extends Chromosome {
   }
   def mutation(a: BinaryChromosome.BC): BinaryChromosome.BC = {
     assert(a.size == length)
-    val k = Random.nextInt(a.size)
-    a.updated(k, Random.nextInt(maxval))
+    def go(n: Int): BinaryChromosome.BC =
+      if(n > 0) {
+        val k = Random.nextInt(a.size)
+        go(n-1).updated(k, Random.nextInt(maxval))
+      }
+      else a
+    go(1)
   }
 }
 
@@ -151,7 +118,7 @@ object BasicSelection{
 
   def find_parent(a: List[Double]): (Int, Int) = {
     val x = a.zipWithIndex.sortWith(_._1 > _._1)
-    (x(0)._2, x(1)._2)
+    (x(0 + Random.nextInt(3))._2, x(1 + Random.nextInt(3))._2)
   }
 
   def selection(a: List[Double], replaced: Int): Set[Int] = {
@@ -161,16 +128,14 @@ object BasicSelection{
     val res = mark_with_false.toSet
     assert(res.size == replaced)
     res
-    // val res = for {
-    //   (x,i) <- b
-    // } yield (mark_with_false.contains(i))
-    // res
   }
 }
 
 object main extends Application {
   val dir = File(System.getProperty("user.dir"))
-  val matches: Iterator[File] = dir.glob("**/1000_5000_normal.{in}")
+  val matches: Iterator[File] = dir.glob("**/500_5000_pos_2coclique.{in}")
+  // val matches: Iterator[File] = dir.glob("**/1000_5000_pos_2coclique.{in}")
+  // val matches: Iterator[File] = dir.glob("**/*_pos_2coclique.{in}")
   matches.foreach { f =>
     println(f)
     val lines: Array[String] = f.lines.toArray
@@ -199,6 +164,4 @@ object main extends Application {
     println(ga_.get_best)
     println(s"${n} ${m}")
   }
-  // val dir: better.files.File = pwd / cwd
-  // val matches: Iterator[File] = dir.glob("**/*.{java,scala}")
 }
