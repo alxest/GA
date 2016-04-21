@@ -35,11 +35,6 @@ class Graph(val size: Int, val edges: Map[(Int, Int), Int]) {
       if(a(from-1) != a(to-1)) res += weight})
     //removing {} will cause error...
     res
-    // val t = for {
-    //   ((from, to), weight) <- this.edges
-    //   if(a(from-1) != a(to-1))
-    // } yield weight
-    // t.foldLeft(0.0)(_ + _)
   }
 }
 
@@ -179,8 +174,6 @@ object main extends Application {
     ).toMap
     assert(edge_data.size == m, s"${m} is not ${edge_data.size}")
 
-
-    // val bc = List(0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
     val g = new Graph(n, edge_data)
     val BC = new BinaryChromosome(n)
     val ga = new GA[List[Int]](
