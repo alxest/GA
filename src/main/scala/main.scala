@@ -65,7 +65,7 @@ class Graph(val size: Int, val edges: Map[(Int, Int), Int]) {
 
 object Graph {
   type Edge = ((Int, Int), Int)
-  def random_weight = Random.nextInt(2000) - 1000
+  def random_weight = Random.nextInt(200) - 100
   // import scala.language.implicitConversions
   // implicit def GraphToString(g: Graph): String = ""
 }
@@ -103,16 +103,22 @@ class GA[A](
     println(s"Current sum of valuation : ${current_value.foldLeft(0.0)(_ + _)}")
     new GA[A](next_pool, crossover, mutation, valuation, find_parent, selection)
   }
+
   def progress(n: Int): GA[A] = {
     println(n)
     if(n > 0) this.next.progress(n-1)
     else this
   }
+
+  def get_best: (A, Double) = {
+    val (sol, idx) = current_value.zipWithIndex.sortWith(_._1 > _._1).head
+    (pool(idx), sol)
+  }
 }
 
 object GA {
-  val pool_size = 150
-  val k_size = pool_size / 6
+  val pool_size = 250
+  val k_size = pool_size / 8
 }
 
 class BinaryChromosome(length: Int) { // extends Chromosome {
@@ -164,7 +170,7 @@ object BasicSelection{
 
 object main extends Application {
   val dir = File(System.getProperty("user.dir"))
-  val matches: Iterator[File] = dir.glob("**/*.{in}")
+  val matches: Iterator[File] = dir.glob("**/1000_5000_normal.{in}")
   matches.foreach { f =>
     println(f)
     val lines: Array[String] = f.lines.toArray
@@ -189,7 +195,8 @@ object main extends Application {
       BasicSelection.find_parent,
       BasicSelection.selection
     )
-    println(ga.progress(15))
+    val ga_ = ga.progress(50)
+    println(ga_.get_best)
     println(s"${n} ${m}")
   }
   // val dir: better.files.File = pwd / cwd
