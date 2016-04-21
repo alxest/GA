@@ -43,10 +43,10 @@ class Graph(val size: Int, val edges: Map[(Int, Int), Int]) {
     new Graph(size, e)
   }
   def valuation(a: BinaryChromosome.BC): Double = {
-    val t = for (
+    val t = for {
       ((from, to), weight) <- this.edges
       if(a(from-1) != a(to-1))
-    ) yield weight
+    } yield weight
     t.foldLeft(0.0)(_ + _)
     // println("inside valuation")
     // val t = for (
@@ -75,18 +75,30 @@ class GA[A](
   val crossover: (A, A) => A,
   val mutation: A => A,
   val valuation: A => Double,
-  val selection: List[Double] => List[Boolean]) {
+  val find_parent: List[Double] => (Int, Int),
+  val selection: (List[Double], Int) => List[Boolean]) {
+
+  lazy val current_value = pool.map(x => valuation(x))
+
+  def get_sibling = {
+    val (mama, papa): (Int, Int) = find_parent(current_value)
+    mutation(crossover(pool(mama), pool(papa)))
+  }
 
   lazy val next: GA[A] = {
-    val a: List[Double] = pool.map(x => valuation(x))
-    val b: List[Boolean] = selection(a)
-    val c: List[(A, Boolean)] = pool.zip(b)
-    val next_pool: List[A] = c.filter(_._2).map(_._1)
+    // val c: List[(A, Boolean)] = pool.zip(b)
+    // val next_pool: List[A] = c.filter(_._2).map(_._1)
     // val c: List[(Double, Boolean, Int)] = a.zip(b).zipWithIndex.
     //   map(x => (x._1._1, x._1._2, x._2))
 
-    println(s"Current sum of valuation : ${a.foldLeft(0.0)(_ + _)}")
-    new GA[A](next_pool, crossover, mutation, valuation, selection)
+    val siblings = for {
+      i <- (1 to GA.k_size)
+    } yield get_sibling
+
+    
+
+    println(s"Current sum of valuation : ${current_value.foldLeft(0.0)(_ + _)}")
+    new GA[A](???, crossover, mutation, valuation, find_parent, selection)
   }
   def progress(n: Int): GA[A] = {
     println(n)
@@ -126,12 +138,21 @@ object BinaryChromosome {
   type BC = List[Int]
 }
 
-object SelectionFunction {
-  def basic(a: List[Double]): List[Boolean] = {
+object BasicSelection{
+
+  def find_parent(a: List[Double]): (Int, Int) = {
+    val x = a.zipWithIndex.sorted
+    (x(0)._2, x(1)._2)
+  }
+
+  def selection(a: List[Double], replaced: Int): List[Boolean] = {
     val b = a.zipWithIndex
     val c = b.sortWith((x, y) => x._1 > y._1)
-    val d = c.take((a.length)/2)
-    ???
+    val mark_with_false: List[Int] = c.take(replaced).map(_._2)
+    val res = for {
+      (x,i) <- b
+    } yield (mark_with_false.contains(i))
+    res
   }
 }
 
@@ -159,7 +180,8 @@ object main extends Application {
       LIC.crossover,
       LIC.mutation,
       g.valuation,
-      SelectionFunction.basic
+      BasicSelection.find_parent,
+      BasicSelection.selection
     )
     println(ga.progress(15))
     println(s"${n} ${m}")
