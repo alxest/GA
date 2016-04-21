@@ -90,7 +90,7 @@ class GA[A](
 }
 
 object GA {
-  val pool_size = 35
+  val pool_size = 15
   val k_size = (pool_size / 1.1).toInt
 }
 
@@ -98,13 +98,21 @@ class BinaryChromosome(length: Int) { // extends Chromosome {
   val maxval = 2
   def random_binary: BinaryChromosome.BC =
     (1 to length).map(_ => Random.nextInt(maxval)).toList
-  def crossover(a: BinaryChromosome.BC, b: BinaryChromosome.BC): BinaryChromosome.BC = {
-    assert(a.size == b.size)
-    assert(b.size == length)
-    val l = a.size
-    val k = Random.nextInt(l)
-    a.slice(0, k) ++ b.slice(k, l)
+  def point_crossover(n: Int)(a: BinaryChromosome.BC, b: BinaryChromosome.BC): (BinaryChromosome.BC, BinaryChromosome.BC) = {
+    if(n == 0) {
+      (a, b)
+    }
+    else if(n >= 1){
+      assert(a.size == b.size)
+      assert(b.size == length)
+      val k = Random.nextInt(length)
+      val (a_, b_) = (a.slice(0, k) ++ b.slice(k, length),
+        a.slice(k, length) ++ b.slice(0, k))
+      point_crossover(n-1)(a_, b_)
+    }
+    else ???
   }
+  def equal_crossover = ???
   def mutation(a: BinaryChromosome.BC): BinaryChromosome.BC = {
     if(Random.nextInt(5) == 0) return a
     // println("mutation start")
@@ -152,8 +160,9 @@ object BasicSelection{
 object main extends Application {
   val dir = File(System.getProperty("user.dir"))
   // val matches: Iterator[File] = dir.glob("**/100_5000_pos_2coclique.{in}")
-  val matches: Iterator[File] = dir.glob("**/200_20000_pos_2coclique.{in}")
-  // val matches: Iterator[File] = dir.glob("**/1000_5000_pos_2coclique.{in}")
+  // val matches: Iterator[File] = dir.glob("**/200_20000_pos_2coclique.{in}")
+  val matches: Iterator[File] = dir.glob("**/1000_10000_pos_2coclique.{in}")
+  // val matches: Iterator[File] = dir.glob("**/given_500.in")
   // val matches: Iterator[File] = dir.glob("**/*_pos_2coclique.{in}")
   matches.foreach { f =>
     println(f)
@@ -171,20 +180,20 @@ object main extends Application {
     assert(edge_data.size == m, s"${m} is not ${edge_data.size}")
 
 
-    val bc = List(0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
+    // val bc = List(0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
     val g = new Graph(n, edge_data)
     val BC = new BinaryChromosome(n)
     val ga = new GA[List[Int]](
-      List.fill(GA.pool_size)(bc), //(BC.random_binary),
-      BC.crossover,
+      List.fill(GA.pool_size)(BC.random_binary),
+      ((x, y) => BC.point_crossover(1)(x, y)._1),
       BC.mutation,
       g.valuation,
       BasicSelection.find_parent,
       BasicSelection.selection
     )
-    val ga_ = ga.progress(50)
+    val ga_ = ga.progress(1500)
     println(ga_.get_best)
-    println(ga_.pool.map(BC.distance(bc, _)).sorted)
+    // println(ga_.pool.map(BC.distance(bc, _)).sorted)
     println(s"${n} ${m}")
   }
 }
