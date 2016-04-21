@@ -90,7 +90,7 @@ class GA[A](
 }
 
 object GA {
-  val pool_size = 100
+  val pool_size = 50
   val k_size = (pool_size / 1.1).toInt
 }
 
@@ -115,10 +115,13 @@ class BinaryChromosome(length: Int) { // extends Chromosome {
         g.updated(k, 1-g(k))
       }
       else a
-    val res = go(25)
+    val res = go(5)
     // println("mutation end")
     res
   }
+
+  def distance(a: BinaryChromosome.BC, b: BinaryChromosome.BC): Int =
+    a.zip(b).filter(x => x._1 != x._2).size
 }
 
 object BinaryChromosome {
@@ -165,18 +168,22 @@ object main extends Application {
       }
     ).toMap
     assert(edge_data.size == m, s"${m} is not ${edge_data.size}")
+
+
+    val bc = List(0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
     val g = new Graph(n, edge_data)
-    val LIC = new BinaryChromosome(n)
+    val BC = new BinaryChromosome(n)
     val ga = new GA[List[Int]](
-      List.fill(GA.pool_size)(LIC.random_binary),
-      LIC.crossover,
-      LIC.mutation,
+      List.fill(GA.pool_size)(bc), //(BC.random_binary),
+      BC.crossover,
+      BC.mutation,
       g.valuation,
       BasicSelection.find_parent,
       BasicSelection.selection
     )
-    val ga_ = ga.progress(100)
+    val ga_ = ga.progress(20)
     println(ga_.get_best)
+    println(ga_.pool.map(BC.distance(bc, _)).sorted)
     println(s"${n} ${m}")
   }
 }
