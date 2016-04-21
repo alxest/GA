@@ -43,18 +43,23 @@ class Graph(val size: Int, val edges: Map[(Int, Int), Int]) {
     new Graph(size, e)
   }
   def valuation(a: BinaryChromosome.BC): Double = {
-    println("inside valuation")
     val t = for (
-      //to: [a,b]
-      //until: [a,b)
-      from <- (0 until size) ;
-      to <- ((from + 1) until size) ;
-      if(a(from) != a(to)) ;
-      weight = edges.getOrElse((from+1,to+1), 0)
+      ((from, to), weight) <- this.edges
+      if(a(from-1) != a(to-1))
     ) yield weight
-    //BC: [0,n)
-    //node: [1,n]
     t.foldLeft(0.0)(_ + _)
+    // println("inside valuation")
+    // val t = for (
+    //   //to: [a,b]
+    //   //until: [a,b)
+    //   from <- (0 until size) ;
+    //   to <- ((from + 1) until size) ;
+    //   if(a(from) != a(to)) ;
+    //   weight = edges.getOrElse((from+1,to+1), 0)
+    // ) yield weight
+    // //BC: [0,n)
+    // //node: [1,n]
+    // t.foldLeft(0.0)(_ + _)
   }
 }
 
@@ -70,11 +75,17 @@ class GA[A](
   val crossover: (A, A) => A,
   val mutation: A => A,
   val valuation: A => Double,
-  val selection: List[Double] => List[Double]) {
+  val selection: List[Double] => List[Boolean]) {
+
   lazy val next: GA[A] = {
-    println("inside next")
-    val next_pool: List[A] = pool.map(x => (x, valuation(x))).map(x => x._1)
-    println("inside next 2")
+    val a: List[Double] = pool.map(x => valuation(x))
+    val b: List[Boolean] = selection(a)
+    val c: List[(A, Boolean)] = pool.zip(b)
+    val next_pool: List[A] = c.filter(_._2).map(_._1)
+    // val c: List[(Double, Boolean, Int)] = a.zip(b).zipWithIndex.
+    //   map(x => (x._1._1, x._1._2, x._2))
+
+    println(s"Current sum of valuation : ${a.foldLeft(0.0)(_ + _)}")
     new GA[A](next_pool, crossover, mutation, valuation, selection)
   }
   def progress(n: Int): GA[A] = {
@@ -86,6 +97,7 @@ class GA[A](
 
 object GA {
   val pool_size = 250
+  val k_size = 25
 }
 
 class BinaryChromosome(length: Int) { // extends Chromosome {
@@ -115,7 +127,12 @@ object BinaryChromosome {
 }
 
 object SelectionFunction {
-  def basic(a: List[Double]): List[Double] = ???
+  def basic(a: List[Double]): List[Boolean] = {
+    val b = a.zipWithIndex
+    val c = b.sortWith((x, y) => x._1 > y._1)
+    val d = c.take((a.length)/2)
+    ???
+  }
 }
 
 object main extends Application {

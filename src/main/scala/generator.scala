@@ -5,8 +5,8 @@ import scala.annotation.tailrec
 import scala.util.Random
 
 object DataGenerator extends Application {
-  val n_cand : Set[Int] = Set(100, 500, 1000, 2500)
-  val m_cand : Set[Int] = Set(0, 10, 100, 1000, 10000, 25000)
+  val n_cand : Set[Int] = Set(100, 500, 1000) //, 2500)
+  val m_cand : Set[Int] = Set(0, 10, 100, 1000, 10000) //, 25000)
   for(n <- n_cand ;
     m <- m_cand
   ) {
