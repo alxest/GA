@@ -76,7 +76,7 @@ class GA[A](
   val mutation: A => A,
   val valuation: A => Double,
   val find_parent: List[Double] => (Int, Int),
-  val selection: (List[Double], Int) => List[Boolean]) {
+  val selection: (List[Double], Int) => Set[Int]) {
 
   lazy val current_value = pool.map(x => valuation(x))
 
@@ -94,11 +94,14 @@ class GA[A](
     val siblings = for {
       i <- (1 to GA.k_size)
     } yield get_sibling
+    val replaced = selection(current_value, GA.k_size)
+    assert(replaced.size == siblings.size)
 
-    
+    val next_pool =
+      pool.zipWithIndex.filterNot(x => replaced.contains(x._2)).map(_._1) ++ siblings
 
     println(s"Current sum of valuation : ${current_value.foldLeft(0.0)(_ + _)}")
-    new GA[A](???, crossover, mutation, valuation, find_parent, selection)
+    new GA[A](next_pool, crossover, mutation, valuation, find_parent, selection)
   }
   def progress(n: Int): GA[A] = {
     println(n)
@@ -108,8 +111,8 @@ class GA[A](
 }
 
 object GA {
-  val pool_size = 250
-  val k_size = 25
+  val pool_size = 150
+  val k_size = pool_size / 6
 }
 
 class BinaryChromosome(length: Int) { // extends Chromosome {
@@ -141,18 +144,21 @@ object BinaryChromosome {
 object BasicSelection{
 
   def find_parent(a: List[Double]): (Int, Int) = {
-    val x = a.zipWithIndex.sorted
+    val x = a.zipWithIndex.sortWith(_._1 > _._1)
     (x(0)._2, x(1)._2)
   }
 
-  def selection(a: List[Double], replaced: Int): List[Boolean] = {
+  def selection(a: List[Double], replaced: Int): Set[Int] = {
     val b = a.zipWithIndex
-    val c = b.sortWith((x, y) => x._1 > y._1)
+    val c = b.sortWith((x, y) => x._1 < y._1)
     val mark_with_false: List[Int] = c.take(replaced).map(_._2)
-    val res = for {
-      (x,i) <- b
-    } yield (mark_with_false.contains(i))
+    val res = mark_with_false.toSet
+    assert(res.size == replaced)
     res
+    // val res = for {
+    //   (x,i) <- b
+    // } yield (mark_with_false.contains(i))
+    // res
   }
 }
 
