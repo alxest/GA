@@ -29,11 +29,17 @@ class Graph(val size: Int, val edges: Map[(Int, Int), Int]) {
     new Graph(size, e)
   }
   def valuation(a: BinaryChromosome.BC): Double = {
-    val t = for {
-      ((from, to), weight) <- this.edges
-      if(a(from-1) != a(to-1))
-    } yield weight
-    t.foldLeft(0.0)(_ + _)
+    var res = 0.0
+    this.edges.foreach(x => {
+      val ((from, to), weight) = x
+      if(a(from-1) != a(to-1)) res += weight})
+    //removing {} will cause error...
+    res
+    // val t = for {
+    //   ((from, to), weight) <- this.edges
+    //   if(a(from-1) != a(to-1))
+    // } yield weight
+    // t.foldLeft(0.0)(_ + _)
   }
 }
 
@@ -57,12 +63,13 @@ class GA[A](
   }
 
   lazy val next: GA[A] = {
-    val siblings = for {
-      i <- (1 to GA.k_size)
-    } yield get_sibling
+    // println("get_sibling")
+    val siblings = List.fill(GA.k_size)(get_sibling)
+    // println("get_replaced")
     val replaced = selection(current_value, GA.k_size)
     assert(replaced.size == siblings.size)
 
+    // println("calculate next_pool")
     val next_pool =
       pool.zipWithIndex.filterNot(x => replaced.contains(x._2)).map(_._1) ++ siblings
 
@@ -83,8 +90,8 @@ class GA[A](
 }
 
 object GA {
-  val pool_size = 200
-  val k_size = pool_size / 2
+  val pool_size = 100
+  val k_size = (pool_size / 1.1).toInt
 }
 
 class BinaryChromosome(length: Int) { // extends Chromosome {
@@ -99,14 +106,18 @@ class BinaryChromosome(length: Int) { // extends Chromosome {
     a.slice(0, k) ++ b.slice(k, l)
   }
   def mutation(a: BinaryChromosome.BC): BinaryChromosome.BC = {
+    // println("mutation start")
     assert(a.size == length)
     def go(n: Int): BinaryChromosome.BC =
       if(n > 0) {
         val k = Random.nextInt(a.size)
-        go(n-1).updated(k, Random.nextInt(maxval))
+        val g = go(n-1)
+        g.updated(k, 1-g(k))
       }
       else a
-    go(1)
+    val res = go(25)
+    // println("mutation end")
+    res
   }
 }
 
@@ -117,8 +128,11 @@ object BinaryChromosome {
 object BasicSelection{
 
   def find_parent(a: List[Double]): (Int, Int) = {
+    // println("find_parent start")
     val x = a.zipWithIndex.sortWith(_._1 > _._1)
-    (x(0 + Random.nextInt(3))._2, x(1 + Random.nextInt(3))._2)
+    val res = (x(0 + Random.nextInt(3))._2, x(1 + Random.nextInt(3))._2)
+    // println("find_parent end")
+    res
   }
 
   def selection(a: List[Double], replaced: Int): Set[Int] = {
@@ -133,7 +147,8 @@ object BasicSelection{
 
 object main extends Application {
   val dir = File(System.getProperty("user.dir"))
-  val matches: Iterator[File] = dir.glob("**/500_5000_pos_2coclique.{in}")
+  // val matches: Iterator[File] = dir.glob("**/100_5000_pos_2coclique.{in}")
+  val matches: Iterator[File] = dir.glob("**/200_20000_pos_2coclique.{in}")
   // val matches: Iterator[File] = dir.glob("**/1000_5000_pos_2coclique.{in}")
   // val matches: Iterator[File] = dir.glob("**/*_pos_2coclique.{in}")
   matches.foreach { f =>
@@ -160,7 +175,7 @@ object main extends Application {
       BasicSelection.find_parent,
       BasicSelection.selection
     )
-    val ga_ = ga.progress(50)
+    val ga_ = ga.progress(100)
     println(ga_.get_best)
     println(s"${n} ${m}")
   }
