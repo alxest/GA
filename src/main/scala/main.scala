@@ -55,7 +55,7 @@ class GA[A](
     var vc: Map[A, (Double, Int)] = value_cache
     pool.foreach{x =>
       if(! vc.keySet.contains(x))
-        vc = vc.updated(x, (valuation(x), 3))
+        vc = vc.updated(x, (valuation(x), 10))
       else {
         val (value, old_age) = vc(x)
         vc = vc.updated(x, (value, old_age+10))
