@@ -49,7 +49,10 @@ class GA[A](
   val valuation: A => Double,
   val find_parent: List[Double] => (Int, Int),
   val selection: (List[Double], Int) => Set[Int],
-  val value_cache: Map[A, (Double, Int)]) {
+  val value_cache: Map[A, (Double, Int)],
+  val one_distances: A => List[A]) {
+
+  //mutation 1
 
   lazy val new_value_cache: Map[A, (Double, Int)] = {
     var vc: Map[A, (Double, Int)] = value_cache
@@ -91,8 +94,16 @@ class GA[A](
     val next_pool =
       pool.zipWithIndex.filterNot(x => replaced.contains(x._2)).map(_._1) ++ siblings
 
-    println(s"Current avg of valuation : ${(current_value.foldLeft(0.0)(_ + _)/GA.pool_size).toInt} ${get_best._2}")
-    new GA[A](next_pool, crossover, mutation, valuation, find_parent, selection, new_value_cache)
+    val avg = (current_value.foldLeft(0.0)(_ + _)/GA.pool_size).toInt
+    println(s"Current avg of valuation : ${avg} ${get_best._2}")
+    // if(avg >= get_best._2 * 0.99)
+    if(get_best._2 >= 3220)
+      println(s"Best's 1 distance value changes: ${one_distances(get_best._1).map(x =>
+        if(new_value_cache.keySet.contains(x))
+          new_value_cache(x)._1
+        else
+          valuation(x)).max}")
+    new GA[A](next_pool, crossover, mutation, valuation, find_parent, selection, new_value_cache, one_distances)
   }
 
   def progress(n: Int): GA[A] = {
@@ -101,7 +112,7 @@ class GA[A](
     else this
   }
 
-  def get_best: (A, Double) = {
+  lazy val get_best: (A, Double) = {
     val (sol, idx) = current_value.zipWithIndex.sortWith(_._1 > _._1).head
     (pool(idx), sol)
   }
@@ -149,6 +160,13 @@ class BinaryChromosome(length: Int) { // extends Chromosome {
 
   def distance(a: BinaryChromosome.BC, b: BinaryChromosome.BC): Int =
     a.zip(b).filter(x => x._1 != x._2).size
+
+  def one_distances(a: BinaryChromosome.BC): List[BinaryChromosome.BC] = {
+    val b = for{
+      i <- (0 until a.size)
+    } yield (a.updated(i, 1-a(i)))
+    b.toList
+  }
 }
 
 object BinaryChromosome {
@@ -206,9 +224,10 @@ object main extends Application {
       g.valuation,
       BasicSelection.find_parent,
       BasicSelection.selection,
-      Map()
+      Map(),
+      BC.one_distances
     )
-    val ga_ = ga.progress(2700)
+    val ga_ = ga.progress(7000)
     println(ga_.get_best)
     // println(ga_.pool.map(BC.distance(bc, _)).sorted)
     println(s"${n} ${m}")
