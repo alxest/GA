@@ -103,11 +103,6 @@ class GA[A](
     //       valuation(x)).max}")
     new GA[A](next_pool, crossover, mutation, valuation, find_parent, selection, new_value_cache, one_distances)
   }
-
-  lazy val get_best: (A, Double) = {
-    val (sol, idx) = current_value.zipWithIndex.sortWith(_._1 > _._1).head
-    (pool(idx), sol)
-  }
 }
 
 object GA {
