@@ -236,7 +236,7 @@ object main extends App {
 
     val g = new Graph(n, edge_data)
     val BC = new BinaryChromosome(n)
-    val ga = new GA[BinaryChromosome.BC](
+    var ga = new GA[BinaryChromosome.BC](
       List.fill(GA.pool_size)(BC.random_binary),
       ((x, y) => BC.point_crossover(1)(x, y)._1),
       BC.mutation,
@@ -246,9 +246,8 @@ object main extends App {
       Map(),
       BC.one_distances
     )
-    var ga_ = ga
     (0 until 7000).foreach { _ =>
-      ga_ = ga_.next
+      ga = ga.next
       // println(ga_.get_best)
     }
     // println(ga_.pool.map(BC.distance(bc, _)).sorted)
