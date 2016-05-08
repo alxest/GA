@@ -106,13 +106,6 @@ class GA[A](
     new GA[A](next_pool, crossover, mutation, valuation, find_parent, selection, new_value_cache, one_distances)
   }
 
-  @tailrec
-  final def progress(n: Int): GA[A] = {
-    println(n)
-    if(n > 0) this.next.progress(n-1)
-    else this
-  }
-
   lazy val get_best: (A, Double) = {
     val (sol, idx) = current_value.zipWithIndex.sortWith(_._1 > _._1).head
     (pool(idx), sol)
@@ -262,7 +255,7 @@ object main extends App {
     )
     var ga_ = ga
     (0 until 7000).foreach { _ =>
-      ga_ = ga_.progress(1)
+      ga_ = ga_.next
       // println(ga_.get_best)
     }
     // println(ga_.pool.map(BC.distance(bc, _)).sorted)
