@@ -28,7 +28,11 @@ class Graph(val size: Int, val edges: Map[(Int, Int), Int]) {
     }
     new Graph(size, e)
   }
-  def valuation(a: BinaryChromosome.BC): Double = {
+
+  //Can't we just do simpler??
+  val t = new BinaryChromosomeFunctions(size)
+  type BCType = t.BCType
+  def valuation(a: BCType): Double = {
     var res = 0.0
     this.edges.foreach(x => {
       val ((from, to), weight) = x
@@ -49,10 +53,7 @@ class GA[A](
   val valuation: A => Double,
   val find_parent: List[Double] => (Int, Int),
   val selection: (List[Double], Int) => Set[Int],
-  val value_cache: Map[A, (Double, Int)],
-  val one_distances: A => List[A]) {
-
-  //mutation 1
+  val value_cache: Map[A, (Double, Int)]) {
 
   lazy val new_value_cache: Map[A, (Double, Int)] = {
     var vc: Map[A, (Double, Int)] = value_cache
@@ -71,12 +72,10 @@ class GA[A](
       (key, (value, age-1))
     }
     vc = vc.filter(_._2._2 != 0)
-    println("vc size : " + vc.size)
     vc
   }
 
-  lazy val current_value = pool.map(x =>
-      new_value_cache(x)._1)
+  lazy val current_value = pool.map(x => new_value_cache(x)._1)
 
   def get_sibling = {
     val (mama, papa): (Int, Int) = find_parent(current_value)
@@ -84,38 +83,13 @@ class GA[A](
   }
 
   lazy val next: GA[A] = {
-    // println("get_sibling")
     val siblings = List.fill(GA.k_size)(get_sibling)
-    // println("get_replaced")
     val replaced = selection(current_value, GA.k_size)
     assert(replaced.size == siblings.size)
-
-    // println("calculate next_pool")
     val next_pool =
       pool.zipWithIndex.filterNot(x => replaced.contains(x._2)).map(_._1) ++ siblings
-
-    val avg = (current_value.foldLeft(0.0)(_ + _)/GA.pool_size).toInt
-    println(s"Current avg of valuation : ${avg} ${get_best._2}")
-    // if(avg >= get_best._2 * 0.99)
-    // if(get_best._2 >= 3220)
-    //   println(s"Best's 1 distance value changes: ${one_distances(get_best._1).map(x =>
-    //     if(new_value_cache.keySet.contains(x))
-    //       new_value_cache(x)._1
-    //     else
-    //       valuation(x)).max}")
-    new GA[A](next_pool, crossover, mutation, valuation, find_parent, selection, new_value_cache, one_distances)
-  }
-
-  @tailrec
-  final def progress(n: Int): GA[A] = {
-    println(n)
-    if(n > 0) this.next.progress(n-1)
-    else this
-  }
-
-  lazy val get_best: (A, Double) = {
-    val (sol, idx) = current_value.zipWithIndex.sortWith(_._1 > _._1).head
-    (pool(idx), sol)
+    new GA[A](next_pool, crossover, mutation,
+      valuation, find_parent, selection, new_value_cache)
   }
 }
 
@@ -124,14 +98,17 @@ object GA {
   val k_size = (pool_size / 1.1).toInt
 }
 
-class BinaryChromosome(length: Int) { // extends Chromosome {
+class BinaryChromosomeFunctions(length: Int) {
   val maxval = 2
   val default_age = 1.0E-7
   val aging = 1.04 // 1.04
   val mutated_new_age = 1.0E-7
-  def random_binary: BinaryChromosome.BC =
+  type BCType = List[(Int, Double)]
+
+  def random_binary: BCType =
     (1 to length).map(_ => (Random.nextInt(maxval), default_age)).toList
-  def point_crossover(n: Int)(a: BinaryChromosome.BC, b: BinaryChromosome.BC): (BinaryChromosome.BC, BinaryChromosome.BC) = {
+
+  def point_crossover(n: Int)(a: BCType, b: BCType): (BCType, BCType) = {
     if(n == 0) {
       (a, b)
     }
@@ -145,29 +122,22 @@ class BinaryChromosome(length: Int) { // extends Chromosome {
     }
     else ???
   }
+
   def equal_crossover = ???
-  def mutate(a: (Int, Double)): (Int, Double) = {
-    (1-a._1, mutated_new_age) //List(0, a._2 - default_age).max)
-  }
+
+  def mutate(a: (Int, Double)): (Int, Double) = (1-a._1, mutated_new_age)
 
   final def sums(a: List[Double]): List[Double] =
     a.scanLeft(0.0)(_ + _).tail
-    // a match {
-    //   case Nil => Nil
-    //   case h :: t => h :: (sums(t).map(_ + h))
-    // }
 
-  def mutation(a: BinaryChromosome.BC): BinaryChromosome.BC = {
+  def mutation(a: BCType): BCType = {
     if(Random.nextInt(5) == 0) return a
-    // println("mutation start")
     assert(a.size == length)
     @tailrec
-    def go(a: BinaryChromosome.BC)(n: Int): BinaryChromosome.BC =
+    def go(a: BCType)(n: Int): BCType =
       if(n > 0) {
         val s = sums(a.map(_._2))
-        assert(sums(List(1,2,3,4)) == List(1,3,6,10))
         assert(s.size == a.size)
-        // val k_ = Random.nextInt(s.last.toInt).toDouble
         val k_ = Random.nextDouble() * s.last
         import scala.collection.Searching._
         val k = s.search(k_) match {
@@ -175,26 +145,18 @@ class BinaryChromosome(length: Int) { // extends Chromosome {
           case InsertionPoint(i) => i
         }
         assert(0 <= k && k < a.size)
-        // a.map(x => assert(x._2 == 1))
-        // println(a.map(_._1))
-        // println(sums(a.map(_._1)))
-        // println(s.last)
-        // println(k)
-        // val k = Random.nextInt(a.size)
         go(a.updated(k, mutate(a(k))))(n-1)
-        // val g = go(a)(n-1)
-        // g.updated(k, mutate(g(k)))
       }
       else a
+
     val res = go(a)(1).map(x => (x._1, x._2)) // * aging))
-    // println("mutation end")
     res
   }
 
-  def distance(a: BinaryChromosome.BC, b: BinaryChromosome.BC): Int =
+  def distance(a: BCType, b: BCType): Int =
     a.zip(b).filter(x => x._1 != x._2).size
 
-  def one_distances(a: BinaryChromosome.BC): List[BinaryChromosome.BC] = {
+  def one_distances(a: BCType): List[BCType] = {
     val b = for{
       i <- (0 until a.size)
     } yield (a.updated(i, mutate(a(i))))
@@ -202,17 +164,11 @@ class BinaryChromosome(length: Int) { // extends Chromosome {
   }
 }
 
-object BinaryChromosome {
-  type BC = List[(Int, Double)]
-}
-
-object BasicSelection{
+object BasicSelectionFunctions{
 
   def find_parent(a: List[Double]): (Int, Int) = {
-    // println("find_parent start")
     val x = a.zipWithIndex.sortWith(_._1 > _._1)
     val res = (x(0 + Random.nextInt(1))._2, x(0 + Random.nextInt(1))._2)
-    // println("find_parent end")
     res
   }
 
@@ -228,11 +184,7 @@ object BasicSelection{
 
 object main extends App {
   val dir = File(System.getProperty("user.dir"))
-  // val matches: Iterator[File] = dir.glob("**/100_5000_pos_2coclique.{in}")
-  // val matches: Iterator[File] = dir.glob("**/200_20000_pos_2coclique.{in}")
-  // val matches: Iterator[File] = dir.glob("**/1000_10000_pos_2coclique.{in}")
   val matches: Iterator[File] = dir.glob("**/given_500.in")
-  // val matches: Iterator[File] = dir.glob("**/*_pos_2coclique.{in}")
   matches.foreach { f =>
     println(f)
     val lines: Array[String] = f.lines.toArray
@@ -249,23 +201,23 @@ object main extends App {
     assert(edge_data.size == m, s"${m} is not ${edge_data.size}")
 
     val g = new Graph(n, edge_data)
-    val BC = new BinaryChromosome(n)
-    val ga = new GA[BinaryChromosome.BC](
-      List.fill(GA.pool_size)(BC.random_binary),
-      ((x, y) => BC.point_crossover(1)(x, y)._1),
-      BC.mutation,
+    val bc = new BinaryChromosomeFunctions(n)
+    val bs = BasicSelectionFunctions
+    var ga = new GA[bc.BCType](
+      List.fill(GA.pool_size)(bc.random_binary),
+      ((x, y) => bc.point_crossover(1)(x, y)._1),
+      bc.mutation,
       g.valuation,
-      BasicSelection.find_parent,
-      BasicSelection.selection,
-      Map(),
-      BC.one_distances
+      bs.find_parent,
+      bs.selection,
+      Map()
     )
-    var ga_ = ga
-    (0 until 7000).foreach { _ =>
-      ga_ = ga_.progress(1)
-      // println(ga_.get_best)
+
+    var counter = 0
+    while(true) {
+      counter += 1
+      println(counter)
+      ga = ga.next
     }
-    // println(ga_.pool.map(BC.distance(bc, _)).sorted)
-    println(s"${n} ${m}")
   }
 }
