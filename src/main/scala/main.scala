@@ -94,8 +94,6 @@ class GA[A](
     val next_pool =
       pool.zipWithIndex.filterNot(x => replaced.contains(x._2)).map(_._1) ++ siblings
 
-    val avg = (current_value.foldLeft(0.0)(_ + _)/GA.pool_size).toInt
-    println(s"Current avg of valuation : ${avg} ${get_best._2}")
     // if(avg >= get_best._2 * 0.99)
     // if(get_best._2 >= 3220)
     //   println(s"Best's 1 distance value changes: ${one_distances(get_best._1).map(x =>
